@@ -207,7 +207,7 @@ x = tokens.to('mps')
 
 # ---------------------------------------------------------------------------------------------------------
 
-# Generate! right now x is (B, T) where B = 5, T = 8
+# Generate! Right now x is (B, T) where B = 5, T = 8
 # Set the seed to 42
 torch.manual_seed(42)
 torch.mps.manual_seed(42)
