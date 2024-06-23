@@ -1,41 +1,31 @@
-from torch.nn import functional as F
-import tiktoken
 import torch
 from gpt import GPT, GPTConfig
+from data_loader_lite import DataLoaderLite
+import time
 
-# Get a data batch
-
-encoder = tiktoken.get_encoding('gpt2')
-
-with open('../datasets/tinyshakespeare.txt', 'r') as f:
-    text = f.read()
-
-data = text[:1000]
-tockens = encoder.encode(data)
-
-B, T = 4, 32
-
-buf = torch.tensor(tockens[:B*T + 1])
-
-buf = buf.to('mps')
-
-x = buf[:-1].view(B, T)
-y = buf[1:].view(B, T)
-
-# Model initialization
-
+device = 'mps'
 model = GPT(GPTConfig())
-model.to('mps')
-logits, loss = model(x, y)
+model.to(device)
+train_loader = DataLoaderLite(B=4, T=32)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
 
 for i in range(50):
-    # We need to start with a zero gradient
+    t0 = time.time()
+
+    x, y = train_loader.next_batch()
+    x, y = x.to(device), y.to(device)
+
     optimizer.zero_grad()
     logits, loss = model(x, y)
     loss.backward()
     optimizer.step()
 
-    # tensor -> cpu -> float
-    print(f"Loss at iteration {i:02}: {loss.item()}")
+    torch.mps.synchronize() # Wait for the GPU to finish work
+
+    t1 = time.time()
+
+    dt = (t1 - t0) * 1000 # Time difference in miliseconds
+    tokens_per_sec = (train_loader.B * train_loader.T) / (t1 - t0)
+
+    print(f"loss at step {i:02} | loss: {loss.item():18.15f} | dt: {dt:6.2f}ms | tok/sec: {tokens_per_sec:6.2f}")

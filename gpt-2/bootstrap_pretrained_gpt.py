@@ -3,19 +3,20 @@ import torch
 from torch.nn import functional as F
 from gpt import GPT
 
+device = 'mps'
 num_return_sequences = 5
 max_length = 30
 
 model = GPT.from_pretrained('gpt2')
 model.eval()
-model.to('mps')
+model.to(device)
 
 # Prefix tokens
 enc = tiktoken.get_encoding('gpt2')
 tokens = enc.encode("Hello, I'm a language model,")
 tokens = torch.tensor(tokens, dtype=torch.long) # (8,)
 tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1) # (5, 8)
-x = tokens.to('mps')
+x = tokens.to(device)
 
 # ---------------------------------------------------------------------------------------------------------
 
