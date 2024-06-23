@@ -14,9 +14,10 @@ class CausalSelfAttention(nn.Module):
 
         # Key, query, value projections for all heads, but in a batch
         self.c_attn = nn.Linear(config.n_embd, 3 * config.n_embd)
-        
+
         # Output projection
         self.c_proj = nn.Linear(config.n_embd, config.n_embd)
+        self.c_proj.PARVUS_SCALE_INIT = 1
 
         # Regularization
         self.n_head = config.n_head
@@ -61,6 +62,7 @@ class MLP(nn.Module):
         self.c_fc   = nn.Linear(config.n_embd, 4 * config.n_embd)
         self.gelu   = nn.GELU(approximate='tanh')
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd)
+        self.c_proj.PARVUS_SCALE_INIT = 1
 
     def forward(self, x):
         x = self.c_fc(x)
