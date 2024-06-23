@@ -3,7 +3,7 @@ from awesome_gpt import GPT, GPTConfig
 from data_loader_lite import DataLoaderLite
 import time
 
-device = "mps"
+device = "cuda"
 
 torch.manual_seed(1337)
 
