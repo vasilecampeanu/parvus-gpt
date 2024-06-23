@@ -1,7 +1,7 @@
 import tiktoken
 import torch
 from torch.nn import functional as F
-from gpt import GPT
+from awesome_gpt import GPT
 
 device = 'mps'
 num_return_sequences = 5

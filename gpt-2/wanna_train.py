@@ -1,5 +1,5 @@
 import torch
-from gpt import GPT, GPTConfig
+from awesome_gpt import GPT, GPTConfig
 from data_loader_lite import DataLoaderLite
 import time
 
