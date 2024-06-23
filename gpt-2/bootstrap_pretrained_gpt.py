@@ -1,7 +1,7 @@
+import tiktoken
 import torch
 from torch.nn import functional as F
-import tiktoken
-from base import GPT
+from gpt import GPT
 
 num_return_sequences = 5
 max_length = 30
