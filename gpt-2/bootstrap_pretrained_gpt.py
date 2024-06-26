@@ -32,7 +32,8 @@ elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
 while x.size(1) < max_length:
     # Forward the model to get the logits
     with torch.no_grad():
-        logits = model(x) # (B, T, vocab_size)
+        # '_' os the loss which we don't need
+        logits, _ = model(x) # (B, T, vocab_size)
         # Take the logits at the last position
         logits = logits[:, -1, :] # (B, vocab_size)
         # Get the probabilities

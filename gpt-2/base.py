@@ -7,6 +7,7 @@ from torch.nn import functional as F
 # ---------------------------------------------------------------------------------------------------------
 
 class CausalSelfAttention(nn.Module):
+    """Causal self-attention layer. The layer is masked to prevent attending to the future."""
     def __init__(self, config):
         super().__init__()
 
@@ -56,6 +57,7 @@ class CausalSelfAttention(nn.Module):
 # ---------------------------------------------------------------------------------------------------------
 
 class MLP(nn.Module):
+    """Simple MLP with GELU activation"""
     def __init__(self, config):
         super().__init__()
 
@@ -74,6 +76,7 @@ class MLP(nn.Module):
 # ---------------------------------------------------------------------------------------------------------
 
 class Block(nn.Module):
+    """Transformer block"""
     def __init__(self, config):
         super().__init__()
 

@@ -1,9 +1,12 @@
 import torch
 from awesome_gpt import GPT, GPTConfig
-from data_loader_lite import DataLoaderLite
+from data_loader import DataLoader
 import time
 
-device = "cuda"
+# mps - is refering to Metal Performance Shaders,
+# which is a backend for matrix multiplication on Apple devices (macOS) with the M series of apple silicon.
+# cuda - is refering to CUDA backend for matrix multiplication on Nvidia devices
+device = "mps"
 
 torch.manual_seed(1337)
 
@@ -12,7 +15,8 @@ if torch.cuda.is_available():
 elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
     torch.mps.manual_seed(1337)
 
-train_loader = DataLoaderLite(B=4, T=1024)
+# B could go up to 32 (and higher), but it's limited to 4 because my mac can't handle it.
+train_loader = DataLoader(B=8, T=1024)
 torch.set_float32_matmul_precision('high')
 
 model = GPT(GPTConfig())
