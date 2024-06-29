@@ -24,7 +24,7 @@ class DataLoader:
         B, T = self.B, self.T
 
         # +1 represents the target token
-        buf = self.tokens[self.current_position : self.current_position+B*T+1]
+        buf = self.tokens[self.current_position:self.current_position+B*T+1]
         
         # Inputs
         x = (buf[:-1]).view(B, T)
@@ -38,4 +38,5 @@ class DataLoader:
         # If loading the next batch would be out of bounds, reset
         if self.current_position + (B * T + 1) > len(self.tokens):
             self.current_position = 0
+
         return x, y

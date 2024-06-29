@@ -2,6 +2,7 @@ import torch
 from awesome_gpt import GPT, GPTConfig
 from data_loader import DataLoader
 import time
+import csv
 
 # mps - is refering to Metal Performance Shaders,
 # which is a backend for matrix multiplication on Apple devices (macOS) with the M series of apple silicon.
@@ -24,28 +25,44 @@ model.to(device)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
 
-for i in range(50):
-    t0 = time.time()
+# Open a file to store the training data
+with open(f'trainlog/training_log_{device}.csv', mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['step', 'loss', 'dt_ms', 'tokens_per_sec'])
 
-    x, y = train_loader.next_batch()
-    x, y = x.to(device), y.to(device)
+    total_start_time = time.time()  # Start the timer for the entire training loop
 
-    optimizer.zero_grad()
-    logits, loss = model(x, y)
-    loss.backward()
-    optimizer.step()
+    for i in range(50):
+        t0 = time.time()
 
-    # Wait for the GPU to finish work
+        x, y = train_loader.next_batch()
+        x, y = x.to(device), y.to(device)
 
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
-    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        torch.mps.synchronize()
+        optimizer.zero_grad()
+        logits, loss = model(x, y)
+        loss.backward()
+        optimizer.step()
 
-    t1 = time.time()
+        # Wait for the GPU to finish work
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            torch.mps.synchronize()
 
-    # Time difference in miliseconds
-    dt = (t1 - t0) * 1000
-    tokens_per_sec = (train_loader.B * train_loader.T) / (t1 - t0)
+        t1 = time.time()
 
-    print(f"loss at step {i:02} | loss: {loss.item():18.15f} | dt: {dt:8.2f}ms | tok/sec: {tokens_per_sec:6.2f}")
+        # Time difference in milliseconds
+        dt = (t1 - t0) * 1000
+        tokens_per_sec = (train_loader.B * train_loader.T) / (t1 - t0)
+
+        # Print the data
+        print(f"loss at step {i:02} | loss: {loss.item():18.15f} | dt: {dt:8.2f}ms | tok/sec: {tokens_per_sec:6.2f}")
+
+        # Write the data to the file
+        writer.writerow([i, loss.item(), dt, tokens_per_sec])
+
+    total_end_time = time.time()  # End the timer for the entire training loop
+    total_time = total_end_time - total_start_time  # Calculate the total time in seconds
+
+
+print(f"Total training time: {total_time:.2f} seconds")

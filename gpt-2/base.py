@@ -7,7 +7,10 @@ from torch.nn import functional as F
 # ---------------------------------------------------------------------------------------------------------
 
 class CausalSelfAttention(nn.Module):
-    """Causal self-attention layer. The layer is masked to prevent attending to the future."""
+    """
+        Causal self-attention layer. The layer is masked to prevent attending to the future.
+        !!!NOTE: Attention is a communication mechanism between different parts of the input sequence.
+    """
     def __init__(self, config):
         super().__init__()
 
@@ -38,6 +41,7 @@ class CausalSelfAttention(nn.Module):
         # e.g. in GPT-2 (124M), n_head=12, hs=64, so nh*hs=C=768 channels in the Transformer
         qkv = self.c_attn(x)
         q, k, v = qkv.split(self.n_embd, dim=2)
+
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
@@ -57,7 +61,10 @@ class CausalSelfAttention(nn.Module):
 # ---------------------------------------------------------------------------------------------------------
 
 class MLP(nn.Module):
-    """Simple MLP with GELU activation"""
+    """
+        Simple MLP with GELU activation.
+        !!!NOTE: In the MLP there is no communication between different parts of the input sequence.
+    """
     def __init__(self, config):
         super().__init__()
 
@@ -80,13 +87,12 @@ class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
 
-        self.ln_1 = nn.LayerNorm(config.n_embd)
-        self.attn = CausalSelfAttention(config)
-        self.ln_2 = nn.LayerNorm(config.n_embd)
-        self.mlp  = MLP(config)
+        self.ln_1 = nn.LayerNorm(config.n_embd)  # Layer normalization 
+        self.attn = CausalSelfAttention(config)  # Causal self-attention layer
+        self.ln_2 = nn.LayerNorm(config.n_embd)  # Layer normalization
+        self.mlp  = MLP(config)                  # Feed-forward layer or Multi-Layer Perceptron
 
     def forward(self, x):
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
-
         return x
