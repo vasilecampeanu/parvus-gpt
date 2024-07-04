@@ -24,10 +24,16 @@ We have a problem on MacOS. Train loss is not converging when using device MPS f
 - 04 Total training time: 100.84 seconds
 - 05 Total training time: 139.70 seconds
 
-# Running on PodRun 1 x RTX 4090 | 32 vCPU 125 GB RAM
+The average train time on MPS: is 116 seconds
+
+# Running on PodRun 1 x RTX 4090 | 32 vCPU 125 GB VRAM
 
 ## Unoptimized
 
-### CUDA
+### CUDA with RTX 4090 24GB VRAM
 
 Total training time: 13.96 seconds
+
+### CUDA with A100 SMX 80GB VRAM
+
+Total training time: 8.85 seconds

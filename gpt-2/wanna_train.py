@@ -1,5 +1,5 @@
 import torch
-from awesome_gpt import GPT, GPTConfig
+from parvus_gpt import ParvusGPT, GPTConfig
 from data_loader import DataLoader
 import time
 import csv
@@ -7,7 +7,7 @@ import csv
 # mps - is refering to Metal Performance Shaders,
 # which is a backend for matrix multiplication on Apple devices (macOS) with the M series of apple silicon.
 # cuda - is refering to CUDA backend for matrix multiplication on Nvidia devices
-device = "cuda"
+device = "cpu"
 
 torch.manual_seed(1337)
 
@@ -20,7 +20,7 @@ elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
 train_loader = DataLoader(B=8, T=1024)
 torch.set_float32_matmul_precision('high')
 
-model = GPT(GPTConfig())
+model = ParvusGPT(GPTConfig())
 model.to(device)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)

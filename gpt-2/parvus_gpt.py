@@ -9,26 +9,26 @@ from base import Block
 
 @dataclass
 class GPTConfig:
-    block_size: int = 1024  # max sequence length
-    vocab_size: int = 50257 # number of tokens: 50,000 BPE merges + 256 bytes tokens + 1 <|endoftext|> token
-    n_layer: int    = 12    # number of layers
-    n_head: int     = 12    # number of heads
-    n_embd: int     = 768   # embedding dimension
+    context_length:  int = 1024  # max sequence length
+    vocabulary_size: int = 50257 # number of tokens: 50,000 BPE merges + 256 bytes tokens + 1 <|endoftext|> token
+    n_layers: int        = 12    # number of layers
+    n_heads:  int        = 12    # number of heads
+    n_embds:  int        = 768   # embedding dimension
 
-class GPT(nn.Module):
+class ParvusGPT(nn.Module):
     def __init__(self, config):
         super().__init__()
 
         self.config = config
 
         self.transformer = nn.ModuleDict(dict(
-            wte  = nn.Embedding(config.vocab_size, config.n_embd),
-            wpe  = nn.Embedding(config.block_size, config.n_embd),
-            h    = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
-            ln_f = nn.LayerNorm(config.n_embd),
+            wte  = nn.Embedding(config.vocabulary_size, config.n_embds),
+            wpe  = nn.Embedding(config.context_length,  config.n_embds),
+            h    = nn.ModuleList([Block(config) for _ in range(config.n_layers)]),
+            ln_f = nn.LayerNorm(config.n_embds),
         ))
 
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.lm_head = nn.Linear(config.n_embds, config.vocabulary_size, bias=False)
 
         # Weight sharing scheme
         self.transformer.wte.weight = self.lm_head.weight
@@ -40,7 +40,7 @@ class GPT(nn.Module):
         if isinstance(module, nn.Linear):
             std = 0.02
             if hasattr(module, 'PARVUS_SCALE_INIT'):
-                std *= (2 * self.config.n_layer) ** -0.5
+                std *= (2 * self.config.n_layers) ** -0.5
             torch.nn.init.normal_(module.weight, mean=0.0, std=std)
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
@@ -50,12 +50,12 @@ class GPT(nn.Module):
     def forward(self, idx, targets=None):
         # idx is of shape (B, T)
         B, T = idx.size()
-        assert T <= self.config.block_size, f"Cannot forward sequence of length {T}, block size is only {self.config.block_size}"
+        assert T <= self.config.context_length, f"Cannot forward sequence of length {T}, block size is only {self.config.context_length}"
         
         # Dorward the token and posisition embeddings
         pos = torch.arange(0, T, dtype=torch.long, device=idx.device) # Shape (T)
-        pos_emb = self.transformer.wpe(pos) # Position embeddings of shape (T, n_embd)
-        tok_emb = self.transformer.wte(idx) # Token embeddings of shape (B, T, n_embd)
+        pos_emb = self.transformer.wpe(pos) # Position embeddings of shape (T, n_embds)
+        tok_emb = self.transformer.wte(idx) # Token embeddings of shape (B, T, n_embds)
         x = tok_emb + pos_emb
         
         # Forward the blocks of the transformer
@@ -64,7 +64,7 @@ class GPT(nn.Module):
         
         # Forward the final layernorm and the classifier
         x = self.transformer.ln_f(x)
-        logits = self.lm_head(x) # (B, T, vocab_size)
+        logits = self.lm_head(x) # (B, T, vocabulary_size)
 
         # Loss computation
         loss = None
@@ -81,20 +81,20 @@ class GPT(nn.Module):
         from transformers import GPT2LMHeadModel
         print("Loading weights from pretrained gpt: %s" % model_type)
 
-        # n_layer, n_head and n_embd are determined from model_type
+        # n_layers, n_heads and n_embds are determined from model_type
         config_args = {
-            'gpt2':         dict(n_layer=12, n_head=12, n_embd=768),  # 124M  params
-            'gpt2-medium':  dict(n_layer=24, n_head=16, n_embd=1024), # 350M  params
-            'gpt2-large':   dict(n_layer=36, n_head=20, n_embd=1280), # 774M  params
-            'gpt2-xl':      dict(n_layer=48, n_head=25, n_embd=1600), # 1558M params
+            'gpt2':         dict(n_layers=12, n_heads=12, n_embds=768),  # 124M  params
+            'gpt2-medium':  dict(n_layers=24, n_heads=16, n_embds=1024), # 350M  params
+            'gpt2-large':   dict(n_layers=36, n_heads=20, n_embds=1280), # 774M  params
+            'gpt2-xl':      dict(n_layers=48, n_heads=25, n_embds=1600), # 1558M params
         }[model_type]
 
-        config_args['vocab_size'] = 50257 # Always 50257 for GPT model checkpoints
-        config_args['block_size'] = 1024  # Always  1024 for GPT model checkpoints
+        config_args['vocabulary_size'] = 50257 # Always 50257 for GPT model checkpoints
+        config_args['context_length'] = 1024  # Always  1024 for GPT model checkpoints
         
         # Create a from-scratch initialized minGPT model
         config = GPTConfig(**config_args)
-        model = GPT(config)
+        model = ParvusGPT(config)
         sd = model.state_dict()
         sd_keys = sd.keys()
         sd_keys = [k for k in sd_keys if not k.endswith('.attn.bias')] # Discard this mask / buffer, not a param

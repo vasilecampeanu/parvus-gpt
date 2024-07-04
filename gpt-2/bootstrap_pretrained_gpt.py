@@ -1,13 +1,13 @@
 import tiktoken
 import torch
 from torch.nn import functional as F
-from awesome_gpt import GPT
+from parvus_gpt import ParvusGPT
 
 device = 'mps'
 num_return_sequences = 5
 max_length = 30
 
-model = GPT.from_pretrained('gpt2')
+model = ParvusGPT.from_pretrained('gpt2')
 model.eval()
 model.to(device)
 
@@ -33,9 +33,9 @@ while x.size(1) < max_length:
     # Forward the model to get the logits
     with torch.no_grad():
         # '_' os the loss which we don't need
-        logits, _ = model(x) # (B, T, vocab_size)
+        logits, _ = model(x) # (B, T, vocabulary_size)
         # Take the logits at the last position
-        logits = logits[:, -1, :] # (B, vocab_size)
+        logits = logits[:, -1, :] # (B, vocabulary_size)
         # Get the probabilities
         probs = F.softmax(logits, dim=-1)
         # Do top-k sampling of 50 (huggingface pipeline default)
