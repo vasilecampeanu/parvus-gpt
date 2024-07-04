@@ -36,4 +36,4 @@ Total training time: 13.96 seconds
 
 ### CUDA with A100 SMX 80GB VRAM
 
-Total training time: 8.85 seconds
+Total training time: 26.22 seconds

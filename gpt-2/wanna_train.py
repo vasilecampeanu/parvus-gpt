@@ -7,7 +7,7 @@ import csv
 # mps - is refering to Metal Performance Shaders,
 # which is a backend for matrix multiplication on Apple devices (macOS) with the M series of apple silicon.
 # cuda - is refering to CUDA backend for matrix multiplication on Nvidia devices
-device = "cpu"
+device = "cuda"
 
 torch.manual_seed(1337)
 
