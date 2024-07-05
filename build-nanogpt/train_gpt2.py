@@ -2,11 +2,13 @@ import os
 import math
 import time
 import inspect
+import csv
 from dataclasses import dataclass
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from hellaswag import render_example, iterate_examples
+
 # -----------------------------------------------------------------------------
 
 class CausalSelfAttention(nn.Module):
@@ -173,7 +175,6 @@ class GPT(nn.Module):
                 assert sd_hf[k].shape == sd[k].shape
                 with torch.no_grad():
                     sd[k].copy_(sd_hf[k])
-
         return model
 
     def configure_optimizers(self, weight_decay, learning_rate, device_type):
@@ -368,10 +369,22 @@ optimizer = raw_model.configure_optimizers(weight_decay=0.1, learning_rate=6e-4,
 
 # create the log directory we will write checkpoints to and log to
 log_dir = "log"
+
 os.makedirs(log_dir, exist_ok=True)
+
 log_file = os.path.join(log_dir, f"log.txt")
+csv_file = os.path.join(log_dir, f"log.csv")
+timeresult_file = os.path.join(log_dir, f"timeresult.txt")
+
 with open(log_file, "w") as f: # open for writing to clear the file
     pass
+
+# Create and write CSV headers
+with open(csv_file, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["step", "loss", "lr", "norm", "dt", "tokens_per_sec"])
+
+training_start_time = time.time()
 
 for step in range(max_steps):
     t0 = time.time()
@@ -512,10 +525,22 @@ for step in range(max_steps):
     dt = t1 - t0 # time difference in seconds
     tokens_processed = train_loader.B * train_loader.T * grad_accum_steps * ddp_world_size
     tokens_per_sec = tokens_processed / dt
+
     if master_process:
         print(f"step {step:5d} | loss: {loss_accum.item():.6f} | lr {lr:.4e} | norm: {norm:.4f} | dt: {dt*1000:.2f}ms | tok/sec: {tokens_per_sec:.2f}")
         with open(log_file, "a") as f:
             f.write(f"{step} train {loss_accum.item():.6f}\n")
 
+        # Write the same information to the CSV file
+        with open(csv_file, "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([step, loss_accum.item(), lr, norm.item(), dt, tokens_per_sec])
+
 if ddp:
     destroy_process_group()
+
+if master_process:
+    training_end_time = time.time()
+    total_training_time = training_end_time - training_start_time
+    print(f"Total training time: {total_training_time:.2f} seconds")
+    timeresult_file.write(f"Total training time: {total_training_time:.2f} seconds\n")
