@@ -543,4 +543,6 @@ if master_process:
     training_end_time = time.time()
     total_training_time = training_end_time - training_start_time
     print(f"Total training time: {total_training_time:.2f} seconds")
-    timeresult_file.write(f"Total training time: {total_training_time:.2f} seconds\n")
+    
+    with open(timeresult_file, "w") as f:
+        f.write(f"Total training time: {total_training_time:.2f} seconds\n")
